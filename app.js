@@ -4,16 +4,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function cargarProductos() {
     try {
-        // En GitHub Pages, esto buscará el archivo en tu mismo repositorio
-        const respuesta = await fetch('productos.json');
+        // Agregamos un número aleatorio al final para evitar que el navegador guarde la versión vieja (caché)
+        const respuesta = await fetch('productos.json?v=' + new Date().getTime());
         const productos = await respuesta.json();
         
         const contenedor = document.getElementById('contenedor-productos');
-        contenedor.innerHTML = ''; // Limpiamos antes de renderizar
+        contenedor.innerHTML = ''; 
 
         productos.forEach(producto => {
-            // Construimos el mensaje predeterminado para WhatsApp
-            const mensaje = `Hola, me interesa el producto: ${producto.nombre} por $${producto.precio}.`;
+            // Aquí agregamos la URL de la imagen al final del mensaje de WhatsApp
+            const mensaje = `Hola, me interesa el producto: ${producto.nombre} por $${producto.precio}.\n\nReferencia visual: ${producto.imagen}`;
             const enlaceWa = `https://wa.me/${producto.whatsapp}?text=${encodeURIComponent(mensaje)}`;
 
             const tarjeta = document.createElement('div');
