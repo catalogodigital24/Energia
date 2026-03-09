@@ -23,7 +23,7 @@ async function cargarProductos() {
                 <h3>${producto.nombre}</h3>
                 <p>${producto.descripcion}</p>
                 <p class="precio">$${producto.precio}</p>
-                <a href="${enlaceWa}" target="_blank" class="btn-whatsapp">Comprar por WhatsApp</a>
+                <a href="${enlaceWa}" target="_blank" class="btn-whatsapp">💬 Consultar por WhatsApp</a>
             `;
             contenedor.appendChild(tarjeta);
         });
