@@ -13,7 +13,7 @@ async function cargarProductos() {
 
         productos.forEach(producto => {
             // Aquí agregamos la URL de la imagen al final del mensaje de WhatsApp
-            const mensaje = `Hola, me interesa el producto: ${producto.nombre} por $${producto.precio}.\n\nReferencia visual: ${producto.imagen}`;
+            const mensaje = `Hola, quiero preguntarle sobre el producto: ${producto.nombre} por $${producto.precio}.\n\nReferencia visual: ${producto.imagen}`;
             const enlaceWa = `https://wa.me/${producto.whatsapp}?text=${encodeURIComponent(mensaje)}`;
 
             const tarjeta = document.createElement('div');
