@@ -23,8 +23,8 @@
             📦 Cantidad de artículos: <strong id="contador-articulos">0</strong>
         </div>
         
-        <a href="https://catalogodigital24.github.io/Bayamo/" class="btn-cruzado-tiendas" style="background: linear-gradient(145deg, #2980b9, #2c3e50); border: 1px solid #1a252f;">
-            👜 Ver Catálogo Bayamo
+        <a href="https://catalogodigital24.github.io/Bayamo/" class="btn-cruzado-tiendas" style="background: linear-gradient(145deg, #e67e22, #d35400); border: 1px solid #a04000;">
+        👜 Fashion Uso Personal
         </a>
     </header>
 
@@ -32,18 +32,56 @@
         <p style="text-align: center; grid-column: 1 / -1; margin-top: 50px;">Cargando inventario...</p>
     </div>
 
+    <div id="visor-imagen" class="modal-imagen">
+        <img id="imagen-ampliada" src="" alt="Vista ampliada">
+    </div>
+
     <script>
+        // --- LÓGICA DEL VISOR DE IMÁGENES (NUEVO) ---
+        const visor = document.getElementById('visor-imagen');
+        const imgAmpliada = document.getElementById('imagen-ampliada');
+
+        // Función para abrir la imagen
+        window.abrirModal = function(urlImagen) {
+            imgAmpliada.src = urlImagen;
+            visor.style.display = 'flex';
+            
+            // Magia para el móvil: Creamos un "paso" en el historial de navegación
+            history.pushState({ modalAbierto: true }, "");
+        };
+
+        // Función para cerrar la imagen
+        function cerrarModal() {
+            visor.style.display = 'none';
+            imgAmpliada.src = '';
+        }
+
+        // Si el usuario hace clic en cualquier parte de la pantalla negra o en la foto, se cierra
+        visor.addEventListener('click', () => {
+            cerrarModal();
+            // Si cerramos tocando la pantalla, le decimos al navegador que regrese ese "paso" atrás
+            if (history.state && history.state.modalAbierto) {
+                history.back();
+            }
+        });
+
+        // Si el usuario toca el botón físico "Atrás" de su celular o navegador
+        window.addEventListener('popstate', (e) => {
+            if (visor.style.display === 'flex') {
+                cerrarModal(); // Cerramos el modal en lugar de salir de la página
+            }
+        });
+
+
+        // --- LÓGICA DE CARGA DEL INVENTARIO ---
         async function cargarInventario() {
             try {
-                // Lee el archivo productos.json de forma local
                 const respuesta = await fetch('productos.json?t=' + new Date().getTime());
                 if (!respuesta.ok) throw new Error("No se pudo cargar el inventario.");
                 
                 const productos = await respuesta.json();
                 
-                // Actualiza el contador
                 document.getElementById('contador-articulos').innerText = productos.length;
-                
                 const contenedor = document.getElementById('lista-productos');
                 contenedor.innerHTML = ''; 
 
@@ -52,20 +90,18 @@
                     return;
                 }
 
-                // Invierte la lista para mostrar lo más reciente arriba
                 productos.reverse().forEach(producto => {
                     const textoPrecio = producto.precio > 0 ? `$${producto.precio}` : '💰 Consultar';
-                    const nombreProd = producto.nombre ? producto.nombre : 'Artículo de Energía';
+                    const nombreProd = producto.nombre ? producto.nombre : 'Artículo de Moda';
 
-                    // La nueva lógica del mensaje de WhatsApp con formato y link de imagen
-                    const mensajeBase = `¡Hola! Le consulto sobre este producto:\n\n*${nombreProd}*\nPrecio: ${textoPrecio}\n\nReferencia visual: ${producto.imagen}`;
-                    const mensajeCodificado = encodeURIComponent(mensajeBase);
-                    const linkWa = `https://wa.me/${producto.whatsapp}?text=${mensajeCodificado}`;
+                    const mensajeBase = `¡Hola! Me interesa este producto:\n\n*${nombreProd}*\nPrecio: ${textoPrecio}\n\nReferencia visual: ${producto.imagen}`;
+                    const linkWa = `https://wa.me/${producto.whatsapp}?text=${encodeURIComponent(mensajeBase)}`;
 
                     const div = document.createElement('div');
                     div.className = 'tarjeta';
+                    // NUEVO: Agregamos onclick="abrirModal('url')" a la imagen
                     div.innerHTML = `
-                        <img src="${producto.imagen}" alt="Producto" loading="lazy">
+                        <img src="${producto.imagen}" alt="Producto" loading="lazy" onclick="abrirModal('${producto.imagen}')">
                         <h3>${nombreProd}</h3>
                         <p>${producto.descripcion || ''}</p>
                         <span class="precio">${textoPrecio}</span>
