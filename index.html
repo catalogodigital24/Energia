@@ -13,6 +13,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo Energía</title>
     <link rel="stylesheet" href="style.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -29,7 +32,7 @@
     </header>
 
     <div class="grid-productos" id="lista-productos">
-        <p style="text-align: center; grid-column: 1 / -1; margin-top: 50px;">Cargando inventario...</p>
+        <p style="text-align: center; grid-column: 1 / -1; margin-top: 50px;">Cargando inventario y popularidad...</p>
     </div>
 
     <div id="visor-imagen" class="modal-imagen">
@@ -37,17 +40,55 @@
     </div>
 
     <script>
-        // --- LÓGICA DEL VISOR DE IMÁGENES (NUEVO) ---
+        // ==========================================
+        // 1. CONFIGURACIÓN DE FIREBASE
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDAvg2jWTF5TP388nXguftEXEedwEgv7M",
+            authDomain: "catalogos-publicos.firebaseapp.com",
+            projectId: "catalogos-publicos",
+            storageBucket: "catalogos-publicos.firebasestorage.app",
+            messagingSenderId: "205396171840",
+            appId: "1:205396171840:web:7f62d6dbd22acc341853a5",
+            measurementId: "G-27YGCP8REC"
+        };
+
+        // Inicializamos Firebase y la Base de Datos
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ==========================================
+        // 2. SISTEMA DE REGISTRO DE CLICS
+        // ==========================================
+        function registrarInteraccionGlobal(idProducto, tipo) {
+            if(!idProducto) return; // Evitar errores si el producto no tiene ID
+            
+            const docRef = db.collection("estadisticas").doc(idProducto.toString());
+            const incremento = firebase.firestore.FieldValue.increment(1);
+            
+            if (tipo === 'vista') {
+                docRef.set({ vistas: incremento }, { merge: true }).catch(e => console.error(e));
+            } else if (tipo === 'consulta') {
+                docRef.set({ consultas: incremento }, { merge: true }).catch(e => console.error(e));
+            }
+        }
+
+        // ==========================================
+        // 3. LÓGICA DEL VISOR DE IMÁGENES
+        // ==========================================
         const visor = document.getElementById('visor-imagen');
         const imgAmpliada = document.getElementById('imagen-ampliada');
 
-        // Función para abrir la imagen
-        window.abrirModal = function(urlImagen) {
+        // Modificamos para recibir también el ID del producto
+        window.abrirModal = function(urlImagen, idProducto) {
             imgAmpliada.src = urlImagen;
             visor.style.display = 'flex';
             
             // Magia para el móvil: Creamos un "paso" en el historial de navegación
             history.pushState({ modalAbierto: true }, "");
+
+            // Registramos la vista en Firebase
+            registrarInteraccionGlobal(idProducto, 'vista');
         };
 
         // Función para cerrar la imagen
@@ -72,16 +113,44 @@
             }
         });
 
-
-        // --- LÓGICA DE CARGA DEL INVENTARIO ---
+        // ==========================================
+        // 4. CARGA Y ORDENAMIENTO DEL INVENTARIO
+        // ==========================================
         async function cargarInventario() {
             try {
+                // A. Traer productos de GitHub
                 const respuesta = await fetch('productos.json?t=' + new Date().getTime());
                 if (!respuesta.ok) throw new Error("No se pudo cargar el inventario.");
-                
                 const productos = await respuesta.json();
                 
                 document.getElementById('contador-articulos').innerText = productos.length;
+
+                // B. Traer estadísticas de Firebase
+                let estadisticas = {};
+                try {
+                    const snapshot = await db.collection("estadisticas").get();
+                    snapshot.forEach(doc => {
+                        estadisticas[doc.id] = doc.data();
+                    });
+                } catch (errorFirebase) {
+                    console.log("No se pudieron cargar estadísticas aún, se usará orden por defecto.", errorFirebase);
+                }
+
+                // C. Ordenar productos (Populares primero)
+                productos.sort((a, b) => {
+                    const statsA = estadisticas[a.id?.toString()] || { vistas: 0, consultas: 0 };
+                    const statsB = estadisticas[b.id?.toString()] || { vistas: 0, consultas: 0 };
+                    
+                    const puntajeA = (statsA.consultas || 0) * 3 + (statsA.vistas || 0);
+                    const puntajeB = (statsB.consultas || 0) * 3 + (statsB.vistas || 0);
+
+                    if (puntajeA !== puntajeB) {
+                        return puntajeB - puntajeA;
+                    }
+                    return b.id - a.id; // En caso de empate, el más nuevo arriba
+                });
+
+                // D. Renderizar
                 const contenedor = document.getElementById('lista-productos');
                 contenedor.innerHTML = ''; 
 
@@ -90,22 +159,23 @@
                     return;
                 }
 
-                productos.reverse().forEach(producto => {
+                productos.forEach(producto => {
                     const textoPrecio = producto.precio > 0 ? `$${producto.precio}` : '💰 Consultar';
-                    const nombreProd = producto.nombre ? producto.nombre : 'Artículo de Moda';
+                    const nombreProd = producto.nombre ? producto.nombre : 'Equipo o Sistema';
 
                     const mensajeBase = `¡Hola! Le consulto sobre este producto:\n\n*${nombreProd}*\nPrecio: ${textoPrecio}\n\nReferencia visual: ${producto.imagen}`;
                     const linkWa = `https://wa.me/${producto.whatsapp}?text=${encodeURIComponent(mensajeBase)}`;
 
                     const div = document.createElement('div');
                     div.className = 'tarjeta';
-                    // NUEVO: Agregamos onclick="abrirModal('url')" a la imagen
+                    
+                    // Enlazamos las funciones abrirModal y registrarInteraccionGlobal
                     div.innerHTML = `
-                        <img src="${producto.imagen}" alt="Producto" loading="lazy" onclick="abrirModal('${producto.imagen}')">
+                        <img src="${producto.imagen}" alt="Producto" loading="lazy" onclick="abrirModal('${producto.imagen}', ${producto.id})">
                         <h3>${nombreProd}</h3>
                         <p>${producto.descripcion || ''}</p>
                         <span class="precio">${textoPrecio}</span>
-                        <a href="${linkWa}" target="_blank" class="btn-whatsapp">💬 Consultar</a>
+                        <a href="${linkWa}" target="_blank" class="btn-whatsapp" onclick="registrarInteraccionGlobal(${producto.id}, 'consulta')">💬 Consultar</a>
                     `;
                     contenedor.appendChild(div);
                 });
