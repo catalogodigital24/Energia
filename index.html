@@ -11,20 +11,20 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Energía Solar</title>
+    <title>Catálogo Energía</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <h1>Catálogo Energía Solar</h1>
+        <h1>Catálogo Energía</h1>
         
         <div class="info-header">
             📦 Cantidad de artículos: <strong id="contador-articulos">0</strong>
         </div>
         
-        <a href="https://catalogodigital24.github.io/Bayamo/" class="btn-cruzado-tiendas" style="background: linear-gradient(145deg, #8e44ad, #2c3e50); border: 1px solid #1a252f;">
-            👜 Artículos de Moda - Uso Personal
+        <a href="https://catalogodigital24.github.io/Bayamo/" class="btn-cruzado-tiendas" style="background: linear-gradient(145deg, #2980b9, #2c3e50); border: 1px solid #1a252f;">
+            👜 Ver Catálogo Bayamo
         </a>
     </header>
 
@@ -41,7 +41,7 @@
                 
                 const productos = await respuesta.json();
                 
-                // 1. Actualizar el contador en el encabezado fijo
+                // Actualiza el contador
                 document.getElementById('contador-articulos').innerText = productos.length;
                 
                 const contenedor = document.getElementById('lista-productos');
@@ -52,15 +52,13 @@
                     return;
                 }
 
-                // Invertimos la lista para que lo más nuevo salga arriba
+                // Invierte la lista para mostrar lo más reciente arriba
                 productos.reverse().forEach(producto => {
                     const textoPrecio = producto.precio > 0 ? `$${producto.precio}` : '💰 Consultar';
-                    
-                    // AQUI ESTÁ EL CAMBIO: Ahora dice "Artículo Solar" por defecto
-                    const nombreProd = producto.nombre ? producto.nombre : 'Artículo Solar';
+                    const nombreProd = producto.nombre ? producto.nombre : 'Artículo de Energía';
 
-                    // Mensaje automático inteligente para WhatsApp
-                    const mensajeBase = "Hola, vi este producto en tu catálogo y quiero consultar: " + nombreProd;
+                    // La nueva lógica del mensaje de WhatsApp con formato y link de imagen
+                    const mensajeBase = `¡Hola! Le consulto sobre este producto:\n\n*${nombreProd}*\nPrecio: ${textoPrecio}\n\nReferencia visual: ${producto.imagen}`;
                     const mensajeCodificado = encodeURIComponent(mensajeBase);
                     const linkWa = `https://wa.me/${producto.whatsapp}?text=${mensajeCodificado}`;
 
