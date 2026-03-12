@@ -94,7 +94,7 @@
                     const textoPrecio = producto.precio > 0 ? `$${producto.precio}` : '💰 Consultar';
                     const nombreProd = producto.nombre ? producto.nombre : 'Artículo de Moda';
 
-                    const mensajeBase = `¡Hola! Me interesa este producto:\n\n*${nombreProd}*\nPrecio: ${textoPrecio}\n\nReferencia visual: ${producto.imagen}`;
+                    const mensajeBase = `¡Hola! Le consulto sobre este producto:\n\n*${nombreProd}*\nPrecio: ${textoPrecio}\n\nReferencia visual: ${producto.imagen}`;
                     const linkWa = `https://wa.me/${producto.whatsapp}?text=${encodeURIComponent(mensajeBase)}`;
 
                     const div = document.createElement('div');
