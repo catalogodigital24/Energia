@@ -1,32 +1,88 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-RHN6S60695"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RHN6S60695"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-RHN6S60695');
+    </script>
 
-  gtag('config', 'G-RHN6S60695');
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Digital | Energía Solar</title>
+    <title>Catálogo Energía Solar</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<a href="https://catalogodigital24.github.io/Bayamo/" class="btn-cruzado-tiendas" style="background: linear-gradient(145deg, #8e44ad, #2c3e50); border: 1px solid #1a252f;">
-    👜 Artículos de Moda - Uso Personal
-</a>
 <body>
+
     <header>
-        <h1>Energía Solar</h1>
-        <p>Los mejores artículos importados. Radicamos en Bayamo.</p>
+        <h1>Catálogo Energía Solar</h1>
+        
+        <div class="info-header">
+            📦 Cantidad de artículos: <strong id="contador-articulos">0</strong>
+        </div>
+        
+        <a href="https://catalogodigital24.github.io/Bayamo/" class="btn-cruzado-tiendas" style="background: linear-gradient(145deg, #8e44ad, #2c3e50); border: 1px solid #1a252f;">
+            👜 Artículos de Moda - Uso Personal
+        </a>
     </header>
 
-    <main id="contenedor-productos" class="grid-productos">
-        </main>
+    <div class="grid-productos" id="lista-productos">
+        <p style="text-align: center; grid-column: 1 / -1; margin-top: 50px;">Cargando inventario...</p>
+    </div>
 
-    <script src="app.js"></script>
+    <script>
+        async function cargarInventario() {
+            try {
+                // Lee el archivo productos.json de forma local
+                const respuesta = await fetch('productos.json?t=' + new Date().getTime());
+                if (!respuesta.ok) throw new Error("No se pudo cargar el inventario.");
+                
+                const productos = await respuesta.json();
+                
+                // 1. Actualizar el contador en el encabezado fijo
+                document.getElementById('contador-articulos').innerText = productos.length;
+                
+                const contenedor = document.getElementById('lista-productos');
+                contenedor.innerHTML = ''; 
+
+                if(productos.length === 0) {
+                    contenedor.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">Aún no hay artículos disponibles.</p>';
+                    return;
+                }
+
+                // Invertimos la lista para que lo más nuevo salga arriba
+                productos.reverse().forEach(producto => {
+                    const textoPrecio = producto.precio > 0 ? `$${producto.precio}` : '💰 Consultar';
+                    
+                    // AQUI ESTÁ EL CAMBIO: Ahora dice "Artículo Solar" por defecto
+                    const nombreProd = producto.nombre ? producto.nombre : 'Artículo Solar';
+
+                    // Mensaje automático inteligente para WhatsApp
+                    const mensajeBase = "Hola, vi este producto en tu catálogo y quiero consultar: " + nombreProd;
+                    const mensajeCodificado = encodeURIComponent(mensajeBase);
+                    const linkWa = `https://wa.me/${producto.whatsapp}?text=${mensajeCodificado}`;
+
+                    const div = document.createElement('div');
+                    div.className = 'tarjeta';
+                    div.innerHTML = `
+                        <img src="${producto.imagen}" alt="Producto" loading="lazy">
+                        <h3>${nombreProd}</h3>
+                        <p>${producto.descripcion || ''}</p>
+                        <span class="precio">${textoPrecio}</span>
+                        <a href="${linkWa}" target="_blank" class="btn-whatsapp">💬 Consultar</a>
+                    `;
+                    contenedor.appendChild(div);
+                });
+
+            } catch (error) {
+                console.error("Error al cargar:", error);
+                document.getElementById('lista-productos').innerHTML = '<p style="text-align: center; grid-column: 1 / -1; color: red;">Hubo un error al cargar el inventario. Asegúrate de haber subido un producto desde tu panel Admin.</p>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarInventario);
+    </script>
 </body>
 </html>
